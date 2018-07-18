@@ -1,0 +1,92 @@
+<html>  
+    <head>  
+        <script type="text/javascript" src="./bundle.js"></script>  
+    </head>  
+  
+    <body>
+		<input id ="login"></input>
+		<button onclick="onclick1()">登陆</button>
+		<input id ="globalChat"></input>
+        <button onclick="onclick2()">发送全局聊天</button>
+		<input id ="chatId"></input>
+		<input id ="chatData"></input>
+        <button onclick="onclick3()">发送单人聊天</button>
+		<p id="p1"></p>
+        <script>
+		var ws
+		function onclick1 (){
+			var inputDom = document.getElementById("login");
+			var text = inputDom.value
+			var pb = new proto.pb();
+			pb.setGamerloginc2s(new proto.pb.GamerLoginC2S());
+			var t = pb.getGamerloginc2s();
+			t.setId(text);   
+			var bytes = pb.serializeBinary();  
+			
+			/*
+			console.log(bytes);  
+			var data = proto.pb.deserializeBinary(bytes);  
+			console.log(data);  
+			console.log(data.getGamerloginc2s().getId()); 
+			*/
+			ws = new WebSocket("ws://127.0.0.1:5000/")
+			ws.onmessage = function(e) {
+				console.log(e.data);  
+				var reader = new FileReader();
+				reader.readAsArrayBuffer(e.data);
+				reader.onload = function(evt){  
+					if(evt.target.readyState == FileReader.DONE){
+						var pb = proto.pb.deserializeBinary(evt.target.result);
+						var globalChat = pb.getGamerglobalchats2c()
+						if(globalChat != null){
+							console.log("recv from server 全局聊天:", globalChat.getData());
+							document.getElementById("p1").innerHTML = document.getElementById("p1").innerHTML + "recv from server 全局聊天:" + globalChat.getData() + "<br>";
+						}
+						var login = pb.getGamerlogins2c()
+						if(login != null){
+							console.log("recv from server 登陆:", login.getJson());
+							document.getElementById("p1").innerHTML = document.getElementById("p1").innerHTML + "recv from server 登陆:" + login.getJson() + "<br>";
+						}
+						var chat = pb.getGamerchats2c()
+						if(chat != null){
+							console.log("recv from server 单人聊天:", chat.getData());
+							document.getElementById("p1").innerHTML = document.getElementById("p1").innerHTML + "recv from server 单人聊天:" + chat.getData() + "                来自:" + chat.getFromid() + "<br>";
+						}
+					} 
+				}
+			}
+			
+			ws.onopen= function(){
+				ws.send(bytes)
+			}
+		}
+		
+		function onclick2 (){
+			var inputDom = document.getElementById("globalChat");
+			var text = inputDom.value
+			var pb = new proto.pb();
+			pb.setGamerglobalchatc2s(new proto.pb.GamerGlobalChatC2S());
+			var t = pb.getGamerglobalchatc2s();
+			t.setData(text);   
+			var bytes = pb.serializeBinary();  
+			
+			ws.send(bytes)
+			
+		}
+		
+		function onclick3 (){
+			var pb = new proto.pb();
+			pb.setGamerchatc2s(new proto.pb.GamerChatC2S());
+			var t = pb.getGamerchatc2s();
+			t.setId(document.getElementById("chatId").value)
+			t.setData(document.getElementById("chatData").value);   
+			var bytes = pb.serializeBinary();  
+			
+			ws.send(bytes)
+			
+		}
+        </script>  
+		
+		
+    </body>  
+</html>  
